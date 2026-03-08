@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档审核助手</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h2 .badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .file-upload {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .file-upload input {
+            display: none;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #333;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .hidden { display: none; }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .loading::after {
+            content: "...";
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: "."; }
+            40% { content: ".."; }
+            60%, 100% { content: "..."; }
+        }
+        .step-info {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 0 8px 8px 0;
+            color: #1565C0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 文档审核助手</h1>
+        
+        <div class="card">
+            <label>API Key（智谱AI）</label>
+            <input type="password" id="apiKey" placeholder="请输入智谱AI API Key">
+            <p style="color: #888; font-size: 12px; margin-top: 8px;">
+                申请地址: https://open.bigmodel.cn/
+            </p>
+        </div>
+        
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('teaching')">📖 提交教学文档</button>
+                <button class="tab" onclick="switchTab('review')">🔍 审核文档</button>
+            </div>
+            
+            <div id="teaching-panel">
+                <div class="step-info">
+                    提交教学文档，AI会理解并消化其中的观点和理念
+                </div>
+                <div class="file-upload" onclick="document.getElementById('teachingFile').click()">
+                    <input type="file" id="teachingFile" accept=".pdf,.docx,.doc,.txt,.md" onchange="handleFileSelect(this, 'teaching')">
+                    <p>📁 点击上传教学文档</p>
+                    <p style="color: #888; font-size: 12px;">支持 PDF、Word、文本、Markdown</p>
+                </div>
+                <textarea id="teachingContent" placeholder="或者直接粘贴文档内容..."></textarea>
+                <button class="btn" onclick="submitTeachingDoc()" style="margin-top: 16px;">
+                    理解文档
+                </button>
+                <div id="teaching-result" class="result hidden"></div>
+            </div>
+            
+            <div id="review-panel" class="hidden">
+                <div class="step-info">
+                    提交审核文档，AI会运用已学习的教学文档知识进行评价
+                </div>
+                <div class="file-upload" onclick="document.getElementById('reviewFile').click()">
+                    <input type="file" id="reviewFile" accept=".pdf,.docx,.doc,.txt,.md" onchange="handleFileSelect(this, 'review')">
+                    <p>📁 点击上传审核文档</p>
+                </div>
+                <textarea id="reviewContent" placeholder="或者直接粘贴待审核的文档内容..."></textarea>
+                <button class="btn" onclick="submitReviewDoc()" style="margin-top: 16px;">
+                    审核文档
+                </button>
+                <div id="review-result" class="result hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let teachingSummary = '';
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab')[tab === 'teaching' ? 0 : 1].classList.add('active');
+            
+            document.getElementById('teaching-panel').classList.toggle('hidden', tab !== 'teaching');
+            document.getElementById('review-panel').classList.toggle('hidden', tab !== 'review');
+        }
+        
+        async function handleFileSelect(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                alert('请先输入API Key');
+                input.value = '';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const btn = input.closest('.file-upload').querySelector('p');
+            btn.textContent = '正在解析文档...';
+            
+            try {
+                const response = await fetch(API_BASE + '/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById(type + 'Content').value = result.content;
+                    btn.textContent = `✅ 已加载: ${file.name}`;
+                } else {
+                    alert('文档解析失败: ' + result.detail);
+                }
+            } catch (e) {
+                alert('上传失败: ' + e.message);
+            }
+        }
+        
+        async function submitTeachingDoc() {
+            const apiKey = document.getElementById('apiKey').value;
+            const content = document.getElementById('teachingContent').value;
+            const resultDiv = document.getElementById('teaching-result');
+            
+            if (!apiKey) { alert('请输入API Key'); return; }
+            if (!content.trim()) { alert('请输入文档内容'); return; }
+            
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = '<div class="loading">AI正在理解文档</div>';
+            
+            try {
+                const response = await fetch(API_BASE + '/api/understand', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ content, api_key: apiKey })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    teachingSummary = result.summary;
+                    resultDiv.textContent = result.summary;
+                } else {
+                    resultDiv.textContent = '错误: ' + result.detail;
+                }
+            } catch (e) {
+                resultDiv.textContent = '请求失败: ' + e.message;
+            }
+        }
+        
+        async function submitReviewDoc() {
+            const apiKey = document.getElementById('apiKey').value;
+            const content = document.getElementById('reviewContent').value;
+            const resultDiv = document.getElementById('review-result');
+            
+            if (!apiKey) { alert('请输入API Key'); return; }
+            if (!content.trim()) { alert('请输入文档内容'); return; }
+            if (!teachingSummary) {
+                alert('请先提交教学文档');
+                switchTab('teaching');
+                return;
+            }
+            
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = '<div class="loading">AI正在进行审核</div>';
+            
+            try {
+                const response = await fetch(API_BASE + '/api/review', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        content, 
+                        teaching_summary: teachingSummary,
+                        api_key: apiKey 
+                    })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.textContent = result.review;
+                } else {
+                    resultDiv.textContent = '错误: ' + result.detail;
+                }
+            } catch (e) {
+                resultDiv.textContent = '请求失败: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
