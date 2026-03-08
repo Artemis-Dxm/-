@@ -1,0 +1,10 @@
+{
+  "$schema": "https://zeabur.com/schema.json",
+  "build": {
+    "method": "docker",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "region": "auto"
+  }
+}
